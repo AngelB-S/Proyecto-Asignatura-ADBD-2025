@@ -1,0 +1,153 @@
+Scripts implementacion BD en postgreSQL.
+
+Con el repositorio clonado o los archivos de codigo descargados, preparamos el entorno.
+
+creamos archivo de configuracion .env con lo siguiente:
+
+# PostgreSQL Configuration
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=music_label_db
+DB_USER=music_user
+DB_PASSWORD=password123
+
+# Flask Configuration
+
+FLASK_ENV=development
+FLASK_DEBUG=True
+FLASK_APP=api/app.py
+
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=5000
+
+
+
+Verificar que se creó
+cat .env
+
+----------------
+en psql ejecutar:
+
+-- Crear usuario
+CREATE USER music_user WITH PASSWORD 'password123';
+-- Crear base de datos
+CREATE DATABASE music_label_db OWNER music_user;
+-- Dar permisos
+GRANT ALL PRIVILEGES ON DATABASE music_label_db TO music_user;
+
+---------------
+ejecutar el esquema para la base de datos:
+
+psql -U music_user -d music_label_db -h localhost -f schema.sql
+
+Debería mostrar: CREATE DOMAIN, CREATE TABLE, CREATE INDEX, etc.
+
+---------------
+configurar script de seed data
+
+nano seed_data.py
+
+Buscar la sección DB_CONFIG y verificar:
+
+DB_CONFIG = {
+'host': 'localhost',
+'database': 'music_label_db',
+'user': 'music_user',
+'password': 'password123',
+'port': 5432
+}
+
+---------------
+Dependencias de python
+
+Crear entorno virtual:
+
+python3 -m venv venv
+
+activar entorno:
+
+source venv/bin/activate
+
+instalar psycopg2-binary (aparte para evitar ciertos conflictos):
+
+pip install psycopg2-binary
+
+instalar python dot env para usar el archivo env creado antes:
+
+pip install python-dotenv
+
+instalamos el resto de dependencias:
+
+pip install -r requirements.txt
+
+---------------
+ejecutamos el generador de datos:
+
+python3 seed_data.py
+
+deberia mostrar la cantidad de tablas creadas.
+--------------
+si se quiere verificar los datos cargados:
+
+# Conectarse a la BD
+psql -U music_user -d music_label_db -h localhost
+# Dentro de PostgreSQL:
+
+SQL
+-- Contar registros
+SELECT COUNT(*) FROM artist;
+-- Debería mostrar: 60
+SELECT COUNT(*) FROM album;
+-- Debería mostrar: 100
+SELECT COUNT(*) FROM song;
+-- Debería mostrar: ~500
+SELECT COUNT(*) FROM recording_session;
+-- Debería mostrar: ~150
+-- Ver algunos datos
+SELECT * FROM artist LIMIT 5;
+
+----------------
+
+Editar config de la Api:
+
+nano app.py
+
+Buscar la sección DB_CONFIG y verificar:
+DB_CONFIG = {
+
+'host': 'localhost',
+'database': 'music_label_db',
+'user': 'music_user',
+'password': 'password123',
+'port': 5432
+}
+
+---------------
+
+ejecutar api y probar que funciona:
+
+python3 app.py
+
+(en otra terminal):
+
+Probar endpoint de salud
+
+curl -X GET http://localhost:5000/api/health
+
+Debería mostrar:
+{"status": "healthy", "database": "connected"}
+
+Obtener estadísticas
+
+curl -X GET http://localhost:5000/api/stats
+
+Debería mostrar JSON con estadísticas
+
+Obtener artistas
+
+curl -X GET http://localhost:5000/api/artists | python3 -m json.tool
+
+Debería mostrar lista de artistas en formato JSON
+
